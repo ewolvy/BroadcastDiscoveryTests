@@ -31,13 +31,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_CODE_BCD && resultCode == RESULT_OK && data != null) {
-            val texto = data.getStringExtra("broadcast.server")
-            Snackbar.make(
-                findViewById(R.id.root_layout), // Parent view
-                texto, // Message to show
-                Snackbar.LENGTH_SHORT // How long to display the message.
-            ).show()
-        }
+        if (requestCode == REQUEST_CODE_BCD && resultCode == RESULT_OK && data != null) Snackbar.make(
+            findViewById(R.id.root_layout), // Parent view
+            data.getStringExtra("broadcast.server"), // Message to show
+            Snackbar.LENGTH_SHORT // How long to display the message.
+        ).show()
     }
 }
