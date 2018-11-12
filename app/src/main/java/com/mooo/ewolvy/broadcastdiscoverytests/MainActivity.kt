@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.widget.Button
 import android.content.Intent
 import android.support.design.widget.Snackbar
+import android.widget.EditText
 import com.mooo.ewolvy.broadcastdiscovery.BroadcastDiscovery
 
 const val BUNDLE_EXTRAS = "BUNDLE_EXTRAS"
@@ -16,17 +17,7 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        findViewById<Button>(R.id.button_test).setOnClickListener {
-            val intent = Intent(this@MainActivity, BroadcastDiscovery::class.java)
-            val extras = Bundle()
-            extras.putString("broadcast.service", "BROADCAST_REALREMOTE")
-            extras.putString("broadcast.port", "19103")
-            extras.putInt("broadcast.maxTimeout", 5000)
-
-            intent.putExtra(BUNDLE_EXTRAS, extras)
-
-            startActivityForResult(intent, REQUEST_CODE_BCD)
-        }
+        findViewById<Button>(R.id.button_test).setOnClickListener {testBroadcastDiscovery()}
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -36,5 +27,17 @@ class MainActivity : AppCompatActivity() {
             data.getStringExtra("broadcast.server"), // Message to show
             Snackbar.LENGTH_SHORT // How long to display the message.
         ).show()
+    }
+
+    fun testBroadcastDiscovery (){
+        val intent = Intent(this@MainActivity, BroadcastDiscovery::class.java)
+        val extras = Bundle()
+        extras.putString("broadcast.service", findViewById<EditText>(R.id.edit_service).text.toString())
+        extras.putInt("broadcast.port", findViewById<EditText>(R.id.edit_port).text.toString().toInt())
+        extras.putInt("broadcast.maxTimeout", findViewById<EditText>(R.id.edit_timeout).text.toString().toInt())
+
+        intent.putExtra(BUNDLE_EXTRAS, extras)
+
+        startActivityForResult(intent, REQUEST_CODE_BCD)
     }
 }
