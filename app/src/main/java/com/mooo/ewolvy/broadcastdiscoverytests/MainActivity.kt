@@ -7,6 +7,7 @@ import android.content.Intent
 import android.support.design.widget.Snackbar
 import android.widget.EditText
 import com.mooo.ewolvy.broadcastdiscovery.BroadcastDiscovery
+import kotlinx.android.synthetic.main.activity_main.*
 
 const val BUNDLE_EXTRAS = "BUNDLE_EXTRAS"
 const val REQUEST_CODE_BCD = 1
@@ -17,19 +18,19 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        findViewById<Button>(R.id.button_test).setOnClickListener {testBroadcastDiscovery()}
+        button_test.setOnClickListener {testBroadcastDiscovery()}
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
         if (requestCode == REQUEST_CODE_BCD && resultCode == RESULT_OK && data != null) Snackbar.make(
-            findViewById(R.id.root_layout), // Parent view
+            root_layout, // Parent view
             data.getStringExtra("broadcast.server"), // Message to show
             Snackbar.LENGTH_SHORT // How long to display the message.
         ).show()
     }
 
-    fun testBroadcastDiscovery (){
+    private fun testBroadcastDiscovery (){
         val intent = Intent(this@MainActivity, BroadcastDiscovery::class.java)
         val extras = Bundle()
         extras.putString("broadcast.service", findViewById<EditText>(R.id.edit_service).text.toString())
