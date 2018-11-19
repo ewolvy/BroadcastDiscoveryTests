@@ -1,3 +1,5 @@
 package com.mooo.ewolvy.broadcastdiscovery
 
-data class Server (val description: String, val JSONResponse: String)
+import org.json.JSONObject
+
+data class Server (val description: String, val JSONResponse: JSONObject)

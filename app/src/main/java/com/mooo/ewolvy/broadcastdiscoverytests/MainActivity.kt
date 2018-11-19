@@ -2,14 +2,13 @@ package com.mooo.ewolvy.broadcastdiscoverytests
 
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import android.widget.Button
 import android.content.Intent
 import android.support.design.widget.Snackbar
 import android.widget.EditText
 import com.mooo.ewolvy.broadcastdiscovery.BroadcastDiscovery
 import kotlinx.android.synthetic.main.activity_main.*
 
-const val BUNDLE_EXTRAS = "BUNDLE_EXTRAS"
+const val BROADCAST_EXTRAS = "BROADCAST_EXTRAS"
 const val REQUEST_CODE_BCD = 1
 
 class MainActivity : AppCompatActivity() {
@@ -37,7 +36,7 @@ class MainActivity : AppCompatActivity() {
         extras.putInt("broadcast.port", findViewById<EditText>(R.id.edit_port).text.toString().toInt())
         extras.putInt("broadcast.maxTimeout", findViewById<EditText>(R.id.edit_timeout).text.toString().toInt())
 
-        intent.putExtra(BUNDLE_EXTRAS, extras)
+        intent.putExtra(BROADCAST_EXTRAS, extras)
 
         startActivityForResult(intent, REQUEST_CODE_BCD)
     }
