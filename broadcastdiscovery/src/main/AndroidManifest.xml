@@ -3,7 +3,7 @@
           package="com.mooo.ewolvy.broadcastdiscovery">
 
     <application>
-        <activity android:name=".BroadcastDiscovery">
+        <activity android:name=".BroadcastDiscoveryActivity">
         </activity>
     </application>
 

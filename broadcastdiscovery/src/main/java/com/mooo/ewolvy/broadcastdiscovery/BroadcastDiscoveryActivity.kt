@@ -1,10 +1,12 @@
 package com.mooo.ewolvy.broadcastdiscovery
 
-import android.support.v7.app.AppCompatActivity
+import android.os.AsyncTask
 import android.os.Bundle
+import android.support.v7.app.AppCompatActivity
 import android.view.View
 import kotlinx.android.synthetic.main.activity_broadcast_discovery.*
 import org.json.JSONObject
+import java.lang.ref.WeakReference
 
 
 /**
@@ -26,7 +28,7 @@ broadcast.status: OK or ERROR_XXXX [where XXXX = error code] as String
 const val BROADCAST_EXTRAS = "BROADCAST_EXTRAS"
 const val ERROR_NO_SERVICE = "ERROR_NO_SERVICE"
 
-class BroadcastDiscovery : AppCompatActivity() {
+class BroadcastDiscoveryActivity : AppCompatActivity() {
 
     private lateinit var serviceName: String
     private var port: Int = 0
@@ -44,7 +46,7 @@ class BroadcastDiscovery : AppCompatActivity() {
             //TODO: Manage wrong calling to the library
         }
 
-        rec_view.setOnClickListener{onServerSelected(it)}
+        list_view.setOnClickListener{onServerSelected(it)}
     }
 
     private fun getValuesFromIntent(){
@@ -64,5 +66,21 @@ class BroadcastDiscovery : AppCompatActivity() {
 
     private fun onServerSelected(v: View){
         //TODO: manage server selection and return to calling Activity
+    }
+
+    private class FetchData internal constructor(context: BroadcastDiscoveryActivity): AsyncTask<String, JSONObject, Unit>(){
+
+        private val activityReference: WeakReference<BroadcastDiscoveryActivity> = WeakReference(context)
+
+        override fun doInBackground(vararg p0: String?) {
+            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+        }
+
+        override fun onProgressUpdate(vararg values: JSONObject?) {
+            super.onProgressUpdate(*values)
+            val activity = activityReference.get()
+            if (activity == null || activity.isFinishing) return
+            activity.addServer(values[0]!!)
+        }
     }
 }

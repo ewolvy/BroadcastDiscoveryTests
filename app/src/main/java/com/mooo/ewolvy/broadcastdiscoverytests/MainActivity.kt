@@ -5,7 +5,7 @@ import android.os.Bundle
 import android.content.Intent
 import android.support.design.widget.Snackbar
 import android.widget.EditText
-import com.mooo.ewolvy.broadcastdiscovery.BroadcastDiscovery
+import com.mooo.ewolvy.broadcastdiscovery.BroadcastDiscoveryActivity
 import kotlinx.android.synthetic.main.activity_main.*
 
 const val BROADCAST_EXTRAS = "BROADCAST_EXTRAS"
@@ -30,7 +30,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun testBroadcastDiscovery (){
-        val intent = Intent(this@MainActivity, BroadcastDiscovery::class.java)
+        val intent = Intent(this@MainActivity, BroadcastDiscoveryActivity::class.java)
         val extras = Bundle()
         extras.putString("broadcast.service", findViewById<EditText>(R.id.edit_service).text.toString())
         extras.putInt("broadcast.port", findViewById<EditText>(R.id.edit_port).text.toString().toInt())
