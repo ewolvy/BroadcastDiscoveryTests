@@ -7,6 +7,9 @@ import android.view.View
 import kotlinx.android.synthetic.main.activity_broadcast_discovery.*
 import org.json.JSONObject
 import java.lang.ref.WeakReference
+import android.widget.ArrayAdapter
+import android.support.design.widget.Snackbar
+import android.util.Log
 
 
 /**
@@ -25,14 +28,17 @@ broadcast.status: OK or ERROR_XXXX [where XXXX = error code] as String
 ************************************************************************************
 */
 
+const val BROADCAST_TAG = "BROADCAST_TAG"
 const val BROADCAST_EXTRAS = "BROADCAST_EXTRAS"
 const val ERROR_NO_SERVICE = "ERROR_NO_SERVICE"
+const val DEFAULT_TIMEOUT = 2000L
 
 class BroadcastDiscoveryActivity : AppCompatActivity() {
 
     private lateinit var serviceName: String
+    private lateinit var arrayAdapter: ArrayAdapter<Server>
     private var port: Int = 0
-    private var timeOut: Int = 0
+    private var timeOut: Long = 0
 
     private val serverList: ArrayList<Server> = arrayListOf()
 
@@ -46,7 +52,13 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             //TODO: Manage wrong calling to the library
         }
 
-        list_view.setOnClickListener{onServerSelected(it)}
+        //list_view.setOnItemClickListener{onServerSelected(it)}
+        list_view.setOnItemClickListener{ parent, view, position, id ->
+            onServerSelected(parent, view, position, id)}
+        arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, serverList)
+        list_view.adapter = arrayAdapter
+        val fetchData = FetchData(this)
+        fetchData.execute("nada")
     }
 
     private fun getValuesFromIntent(){
@@ -54,7 +66,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         if (extras != null) {
             serviceName = extras.getString("broadcast.service", ERROR_NO_SERVICE)
             port = extras.getInt("broadcast.port", 0)
-            timeOut = extras.getInt("broadcast.maxTimeout", 10000)
+            timeOut = extras.getLong("broadcast.maxTimeout", DEFAULT_TIMEOUT)
         } else {
             serviceName = ERROR_NO_SERVICE
         }
@@ -62,25 +74,49 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
 
     private fun addServer(server: JSONObject){
         serverList.add(Server (server.getString("Description"), server))
+        arrayAdapter.notifyDataSetChanged()
     }
 
-    private fun onServerSelected(v: View){
-        //TODO: manage server selection and return to calling Activity
+    private fun addServer(server: String){
+        serverList.add(Server (server, null))
+        arrayAdapter.notifyDataSetChanged()
     }
 
-    private class FetchData internal constructor(context: BroadcastDiscoveryActivity): AsyncTask<String, JSONObject, Unit>(){
+    private fun onServerSelected(parent: View, view: View, position: Int, id: Long){
+        //TODO("manage server selection and return to calling Activity")
+        Snackbar.make(
+            parent, // Parent view
+            "Prueba $position", // Message to show
+            Snackbar.LENGTH_LONG // How long to display the message.
+        ).show()
+    }
+
+    private class FetchData internal constructor(context: BroadcastDiscoveryActivity): AsyncTask<String, String, Unit>(){
 
         private val activityReference: WeakReference<BroadcastDiscoveryActivity> = WeakReference(context)
 
         override fun doInBackground(vararg p0: String?) {
-            TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+            var i = 0
+            val activity = activityReference.get()?: return
+            while (!activity.isFinishing){
+                publishProgress(i.toString())
+                Log.d(BROADCAST_TAG, "doInBackground $i")
+                i++
+                Thread.sleep(activity.timeOut)
+            }
+            //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
         }
 
-        override fun onProgressUpdate(vararg values: JSONObject?) {
+        override fun onProgressUpdate(vararg values: String?) {
             super.onProgressUpdate(*values)
-            val activity = activityReference.get()
-            if (activity == null || activity.isFinishing) return
-            activity.addServer(values[0]!!)
+            val activity: BroadcastDiscoveryActivity = activityReference.get()?: return
+            if (activity.isFinishing) return
+            activity.addServer(values[0]?: return)
+        }
+
+        override fun onPostExecute(result: Unit?) {
+            super.onPostExecute(result)
+            Log.d(BROADCAST_TAG, "FetchData finished")
         }
     }
 }
