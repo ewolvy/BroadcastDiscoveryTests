@@ -1,5 +1,6 @@
 package com.mooo.ewolvy.broadcastdiscovery
 
+import android.content.Context
 import android.os.AsyncTask
 import android.os.Bundle
 import android.support.v7.app.AppCompatActivity
@@ -10,6 +11,11 @@ import java.lang.ref.WeakReference
 import android.widget.ArrayAdapter
 import android.support.design.widget.Snackbar
 import android.util.Log
+import android.net.NetworkInfo
+import android.content.Context.CONNECTIVITY_SERVICE
+import android.support.v4.content.ContextCompat.getSystemService
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 
 
 /**
@@ -57,8 +63,12 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             onServerSelected(parent, view, position, id)}
         arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, serverList)
         list_view.adapter = arrayAdapter
-        val fetchData = FetchData(this)
-        fetchData.execute("nada")
+        if (isWifiConnected()) {
+            val fetchData = FetchData(this)
+            fetchData.execute("nada")
+        } else {
+            TODO("Implementar error en caso de que no esté usando Wifi")
+        }
     }
 
     private fun getValuesFromIntent(){
@@ -72,15 +82,20 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         }
     }
 
+    private fun isWifiConnected(): Boolean{
+        val cm = applicationContext.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        return cm.getNetworkCapabilities(cm.activeNetwork).hasTransport(NetworkCapabilities.TRANSPORT_WIFI)
+    }
+
     private fun addServer(server: JSONObject){
         serverList.add(Server (server.getString("Description"), server))
         arrayAdapter.notifyDataSetChanged()
     }
 
-    private fun addServer(server: String){
+    /*private fun addServer(server: String){
         serverList.add(Server (server, null))
         arrayAdapter.notifyDataSetChanged()
-    }
+    }*/
 
     private fun onServerSelected(parent: View, view: View, position: Int, id: Long){
         //TODO("manage server selection and return to calling Activity")
@@ -91,23 +106,24 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         ).show()
     }
 
-    private class FetchData internal constructor(context: BroadcastDiscoveryActivity): AsyncTask<String, String, Unit>(){
+    private class FetchData internal constructor(context: BroadcastDiscoveryActivity): AsyncTask<String, JSONObject, Unit>(){
 
         private val activityReference: WeakReference<BroadcastDiscoveryActivity> = WeakReference(context)
 
         override fun doInBackground(vararg p0: String?) {
-            var i = 0
+            /*var i = 0
             val activity = activityReference.get()?: return
             while (!activity.isFinishing){
                 publishProgress(i.toString())
                 Log.d(BROADCAST_TAG, "doInBackground $i")
                 i++
                 Thread.sleep(activity.timeOut)
-            }
+            }*/
             //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
+
         }
 
-        override fun onProgressUpdate(vararg values: String?) {
+        override fun onProgressUpdate(vararg values: JSONObject?) {
             super.onProgressUpdate(*values)
             val activity: BroadcastDiscoveryActivity = activityReference.get()?: return
             if (activity.isFinishing) return
