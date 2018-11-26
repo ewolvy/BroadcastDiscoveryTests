@@ -32,9 +32,9 @@ class MainActivity : AppCompatActivity() {
     private fun testBroadcastDiscovery (){
         val intent = Intent(this@MainActivity, BroadcastDiscoveryActivity::class.java)
         val extras = Bundle()
-        extras.putString("broadcast.service", edit_service.text.toString())
-        extras.putInt("broadcast.port", edit_port.text.toString().toInt())
-        extras.putLong("broadcast.maxTimeout", edit_timeout.text.toString().toLong())
+        extras.putString(BroadcastDiscoveryActivity.EXTRA_SERVICE, edit_service.text.toString())
+        extras.putInt(BroadcastDiscoveryActivity.EXTRA_PORT, edit_port.text.toString().toInt())
+        extras.putLong(BroadcastDiscoveryActivity.EXTRA_TIMEOUT, edit_timeout.text.toString().toLong())
 
         intent.putExtra(BROADCAST_EXTRAS, extras)
 

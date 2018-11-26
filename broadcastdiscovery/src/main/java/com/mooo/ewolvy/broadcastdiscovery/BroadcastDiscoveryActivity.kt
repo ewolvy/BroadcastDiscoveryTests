@@ -11,11 +11,10 @@ import java.lang.ref.WeakReference
 import android.widget.ArrayAdapter
 import android.support.design.widget.Snackbar
 import android.util.Log
-import android.net.NetworkInfo
-import android.content.Context.CONNECTIVITY_SERVICE
-import android.support.v4.content.ContextCompat.getSystemService
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.net.wifi.WifiManager
+import java.net.InterfaceAddress
 
 
 /**
@@ -26,7 +25,7 @@ and will return the server selected by the user, if any.
 The needed parameters must be on a BUNDLE EXTRA called "BROADCAST_EXTRAS" and are:
 broadcast.port: port number on which the servers are listening
 broadcast.service: the service name you are looking for
-broadcast.maxTimeout: the maximum time to wait for a response from the servers
+broadcast.timeout: the maximum time to wait for a response from the servers
 
 The final result will be on the intent:
 broadcast.server: the server information selected by the user (if any) as String
@@ -34,12 +33,17 @@ broadcast.status: OK or ERROR_XXXX [where XXXX = error code] as String
 ************************************************************************************
 */
 
-const val BROADCAST_TAG = "BROADCAST_TAG"
-const val BROADCAST_EXTRAS = "BROADCAST_EXTRAS"
-const val ERROR_NO_SERVICE = "ERROR_NO_SERVICE"
-const val DEFAULT_TIMEOUT = 2000L
 
 class BroadcastDiscoveryActivity : AppCompatActivity() {
+    companion object {
+        const val BROADCAST_EXTRAS = "BROADCAST_EXTRAS"
+        const val BROADCAST_TAG = "BROADCAST_TAG"
+        const val DEFAULT_TIMEOUT = 2000L
+        const val ERROR_NO_SERVICE = "ERROR_NO_SERVICE"
+        const val EXTRA_SERVICE = "broadcast.service"
+        const val EXTRA_PORT = "broadcast.port"
+        const val EXTRA_TIMEOUT = "broadcast.timeout"
+    }
 
     private lateinit var serviceName: String
     private lateinit var arrayAdapter: ArrayAdapter<Server>
@@ -55,28 +59,27 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         getValuesFromIntent()
 
         if (serviceName == ERROR_NO_SERVICE) {
-            //TODO: Manage wrong calling to the library
+            //TODO ("Manage wrong calling to the library")
         }
 
-        //list_view.setOnItemClickListener{onServerSelected(it)}
-        list_view.setOnItemClickListener{ parent, view, position, id ->
-            onServerSelected(parent, view, position, id)}
-        arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, serverList)
-        list_view.adapter = arrayAdapter
         if (isWifiConnected()) {
+            list_view.setOnItemClickListener{ parent, view, position, id ->
+                onServerSelected(parent, view, position, id)}
+            arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, serverList)
+            list_view.adapter = arrayAdapter
             val fetchData = FetchData(this)
             fetchData.execute("nada")
         } else {
-            TODO("Implementar error en caso de que no esté usando Wifi")
+            //TODO("Manage no Wifi connection")
         }
     }
 
     private fun getValuesFromIntent(){
         val extras = intent.getBundleExtra(BROADCAST_EXTRAS)
         if (extras != null) {
-            serviceName = extras.getString("broadcast.service", ERROR_NO_SERVICE)
-            port = extras.getInt("broadcast.port", 0)
-            timeOut = extras.getLong("broadcast.maxTimeout", DEFAULT_TIMEOUT)
+            serviceName = extras.getString(EXTRA_SERVICE, ERROR_NO_SERVICE)
+            port = extras.getInt(EXTRA_PORT, 0)
+            timeOut = extras.getLong(EXTRA_TIMEOUT, DEFAULT_TIMEOUT)
         } else {
             serviceName = ERROR_NO_SERVICE
         }
@@ -121,6 +124,10 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             }*/
             //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
 
+            val activity = activityReference.get()?: return
+            val wifiManager = activity.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            val ipAddress = wifiManager.dhcpInfo.ipAddress
+            val networkMask = wifiManager.dhcpInfo.netmask
         }
 
         override fun onProgressUpdate(vararg values: JSONObject?) {
@@ -134,5 +141,6 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             super.onPostExecute(result)
             Log.d(BROADCAST_TAG, "FetchData finished")
         }
+
     }
 }
