@@ -14,7 +14,10 @@ import android.util.Log
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
-import java.net.InterfaceAddress
+import java.math.BigInteger
+import java.net.InetAddress
+import java.net.UnknownHostException
+import java.nio.ByteOrder
 
 
 /**
@@ -128,6 +131,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             val wifiManager = activity.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             val ipAddress = wifiManager.dhcpInfo.ipAddress
             val networkMask = wifiManager.dhcpInfo.netmask
+            val broadcastAddress = ipAddress or (networkMask.inv())
         }
 
         override fun onProgressUpdate(vararg values: JSONObject?) {
@@ -142,5 +146,46 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             Log.d(BROADCAST_TAG, "FetchData finished")
         }
 
+        private fun wifiIpAddress(context: Context): String? {
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            var ipAddress = wifiManager.dhcpInfo.ipAddress
+
+            // Convert little-endian to big-endian if needed
+            if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+                ipAddress = Integer.reverseBytes(ipAddress)
+            }
+
+            val ipByteArray = BigInteger.valueOf(ipAddress.toLong()).toByteArray()
+
+            var ipAddressString: String?
+            try {
+                ipAddressString = InetAddress.getByAddress(ipByteArray).getHostAddress()
+            } catch (ex: UnknownHostException) {
+                Log.e(BROADCAST_TAG, "Unable to get host address.")
+                ipAddressString = null
+            }
+
+            return ipAddressString
+        }
+
+        private fun wifiIpNetmask(context: Context): String? {
+            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+            var netmask = wifiManager.dhcpInfo.netmask
+
+            // Convert little-endian to big-endian if needed
+            if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
+                netmask = Integer.reverseBytes(netmask)
+            }
+
+            val byteA = netmask / 256 / 256 / 256
+            val byteB = (netmask - byteA * 256 * 256 * 256) / 256 / 256
+            val byteC = (netmask - byteA * 256 * 256 * 256 - byteB * 256 * 256) / 256
+            val byteD = netmask - byteA * 256 * 256 * 256 - byteB * 256 * 256 + byteC * 256
+
+            return byteA.toString() + "." +
+                    byteB.toString() + "." +
+                    byteC.toString() + "." +
+                    byteD.toString()
+        }
     }
 }
