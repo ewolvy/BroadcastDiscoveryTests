@@ -128,10 +128,9 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
 
             val activity = activityReference.get()?: return
-            val wifiManager = activity.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            val ipAddress = wifiManager.dhcpInfo.ipAddress
-            val networkMask = wifiManager.dhcpInfo.netmask
-            val broadcastAddress = ipAddress or (networkMask.inv())
+            val ipAddress = wifiIpAddress(activity)
+            val networkMask = wifiIpNetMask(activity)
+            val broadcastAddress = wifiIpBroadcast(ipAddress, networkMask)
         }
 
         override fun onProgressUpdate(vararg values: JSONObject?) {
@@ -146,7 +145,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             Log.d(BROADCAST_TAG, "FetchData finished")
         }
 
-        private fun wifiIpAddress(context: Context): String? {
+        private fun wifiIpAddress(context: Context): String {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             var ipAddress = wifiManager.dhcpInfo.ipAddress
 
@@ -159,16 +158,16 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
 
             var ipAddressString: String?
             try {
-                ipAddressString = InetAddress.getByAddress(ipByteArray).getHostAddress()
+                ipAddressString = InetAddress.getByAddress(ipByteArray).hostAddress
             } catch (ex: UnknownHostException) {
-                Log.e(BROADCAST_TAG, "Unable to get host address.")
+                Log.e(BroadcastDiscoveryActivity.BROADCAST_TAG, "Unable to get host address.")
                 ipAddressString = null
             }
 
-            return ipAddressString
+            return ipAddressString?: ""
         }
 
-        private fun wifiIpNetmask(context: Context): String? {
+        private fun wifiIpNetMask(context: Context): String {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             var netmask = wifiManager.dhcpInfo.netmask
 
@@ -176,16 +175,25 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
                 netmask = Integer.reverseBytes(netmask)
             }
+            val longMask = netmask + 4294967296
 
-            val byteA = netmask / 256 / 256 / 256
-            val byteB = (netmask - byteA * 256 * 256 * 256) / 256 / 256
-            val byteC = (netmask - byteA * 256 * 256 * 256 - byteB * 256 * 256) / 256
-            val byteD = netmask - byteA * 256 * 256 * 256 - byteB * 256 * 256 + byteC * 256
+            val byteA = longMask / 256 / 256 / 256
+            val byteB = (longMask - byteA * 256 * 256 * 256) / 256 / 256
+            val byteC = (longMask - byteA * 256 * 256 * 256 - byteB * 256 * 256) / 256
+            val byteD = longMask - byteA * 256 * 256 * 256 - byteB * 256 * 256 - byteC * 256
 
             return byteA.toString() + "." +
                     byteB.toString() + "." +
                     byteC.toString() + "." +
                     byteD.toString()
+        }
+
+        private fun wifiIpBroadcast(ipAddress: String, netMask: String): String {
+            val intIp = ipAddress.split(".").map { it.toInt() }
+            val intNetMask = netMask.split(".").map { it.toInt() }
+
+            val intBroadcast = (0 until intIp.size).map {(intIp[it] or intNetMask[it].inv()) + 256}
+            return intBroadcast.joinToString(".")
         }
     }
 }

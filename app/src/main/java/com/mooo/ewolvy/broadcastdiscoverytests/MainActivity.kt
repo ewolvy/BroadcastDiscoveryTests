@@ -13,6 +13,8 @@ import java.math.BigInteger
 import java.net.InetAddress
 import java.net.UnknownHostException
 import java.nio.ByteOrder
+import kotlin.experimental.inv
+import kotlin.experimental.or
 
 
 const val BROADCAST_EXTRAS = "BROADCAST_EXTRAS"
@@ -37,7 +39,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun testBroadcastDiscovery (){
-        /*
         val intent = Intent(this@MainActivity, BroadcastDiscoveryActivity::class.java)
         val extras = Bundle()
         extras.putString(BroadcastDiscoveryActivity.EXTRA_SERVICE, edit_service.text.toString())
@@ -47,52 +48,5 @@ class MainActivity : AppCompatActivity() {
         intent.putExtra(BROADCAST_EXTRAS, extras)
 
         startActivityForResult(intent, REQUEST_CODE_BCD)
-        */
-        Snackbar.make(root_layout,
-            wifiIpAddress(this) + " " + wifiIpNetmask(this),
-            Snackbar.LENGTH_LONG).show()
-    }
-
-    private fun wifiIpAddress(context: Context): String? {
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        var ipAddress = wifiManager.dhcpInfo.ipAddress
-
-        // Convert little-endian to big-endian if needed
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
-            ipAddress = Integer.reverseBytes(ipAddress)
-        }
-
-        val ipByteArray = BigInteger.valueOf(ipAddress.toLong()).toByteArray()
-
-        var ipAddressString: String?
-        try {
-            ipAddressString = InetAddress.getByAddress(ipByteArray).getHostAddress()
-        } catch (ex: UnknownHostException) {
-            Log.e(BroadcastDiscoveryActivity.BROADCAST_TAG, "Unable to get host address.")
-            ipAddressString = null
-        }
-
-        return ipAddressString
-    }
-
-    private fun wifiIpNetmask(context: Context): String? {
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-        var netmask = wifiManager.dhcpInfo.netmask
-
-        // Convert little-endian to big-endian if needed
-        if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
-            netmask = Integer.reverseBytes(netmask)
-        }
-        val longMask = netmask + 4294967296
-
-        val byteA = longMask / 256 / 256 / 256
-        val byteB = (longMask - byteA * 256 * 256 * 256) / 256 / 256
-        val byteC = (longMask - byteA * 256 * 256 * 256 - byteB * 256 * 256) / 256
-        val byteD = longMask - byteA * 256 * 256 * 256 - byteB * 256 * 256 - byteC * 256
-
-        return byteA.toString() + "." +
-                byteB.toString() + "." +
-                byteC.toString() + "." +
-                byteD.toString()
     }
 }
