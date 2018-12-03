@@ -14,10 +14,9 @@ import android.util.Log
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.net.wifi.WifiManager
-import java.math.BigInteger
-import java.net.InetAddress
-import java.net.UnknownHostException
-import java.nio.ByteOrder
+import java.io.BufferedReader
+import java.io.InputStreamReader
+import java.net.*
 
 
 /**
@@ -71,7 +70,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, serverList)
             list_view.adapter = arrayAdapter
             val fetchData = FetchData(this)
-            fetchData.execute("nada")
+            fetchData.execute("BROADCAST_REALREMOTE", port.toString())
         } else {
             //TODO("Manage no Wifi connection")
         }
@@ -94,7 +93,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
     }
 
     private fun addServer(server: JSONObject){
-        serverList.add(Server (server.getString("Description"), server))
+        serverList.add(Server (server.getJSONObject("META").getString("Description"), server))
         arrayAdapter.notifyDataSetChanged()
     }
 
@@ -116,7 +115,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
 
         private val activityReference: WeakReference<BroadcastDiscoveryActivity> = WeakReference(context)
 
-        override fun doInBackground(vararg p0: String?) {
+        override fun doInBackground(vararg arguments: String?) {
             /*var i = 0
             val activity = activityReference.get()?: return
             while (!activity.isFinishing){
@@ -128,9 +127,51 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
 
             val activity = activityReference.get()?: return
-            val ipAddress = wifiIpAddress(activity)
-            val networkMask = wifiIpNetMask(activity)
-            val broadcastAddress = wifiIpBroadcast(ipAddress, networkMask)
+            /*val ipAddress = wifiIpAddress(activity)
+            val networkMask = wifiIpNetMask(activity)*/
+            val broadcastAddress = getBroadcastAddress(activity)
+
+            val datagramSocket = DatagramSocket()
+            datagramSocket.broadcast = true
+            val sendData = arguments[0]?.toByteArray() ?: return
+            Log.d(BROADCAST_TAG, "Attempting to get port")
+            val port = arguments[1]?.toInt() ?: return
+            Log.d(BROADCAST_TAG, "Port fetched correctly")
+
+            try {
+                val sendPacket = DatagramPacket(sendData, sendData.size, broadcastAddress, port)
+                datagramSocket.send(sendPacket)
+                Log.d(BROADCAST_TAG, "Request packet sent to: ${broadcastAddress.toString()}")
+            } catch (e: Exception) {
+                Log.d(BROADCAST_TAG, e.toString())
+            } finally {
+                datagramSocket.close()
+            }
+
+            val serverSocket = ServerSocket(19103)
+            serverSocket.soTimeout = 5000
+            var clientSocket: Socket? = null
+            try{
+                clientSocket = serverSocket.accept()
+            } catch (e: SocketTimeoutException){
+                Log.d(BROADCAST_TAG, "Timeout reached")
+            }
+            val br = BufferedReader(InputStreamReader(clientSocket?.getInputStream() ?: return))
+            val message = br.readLine()
+            clientSocket.close()
+            serverSocket.close()
+            publishProgress(JSONObject(message))
+        }
+
+        private fun getBroadcastAddress(context: Context): InetAddress? {
+            val wifi = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
+            val dhcp = wifi?.dhcpInfo ?: return null
+
+            val broadcast = dhcp.ipAddress and dhcp.netmask or dhcp.netmask.inv()
+            val quads = ByteArray(4)
+            for (k in 0..3)
+                quads[k] = (broadcast shr k * 8).toByte()
+            return InetAddress.getByAddress(quads)
         }
 
         override fun onProgressUpdate(vararg values: JSONObject?) {
@@ -145,7 +186,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             Log.d(BROADCAST_TAG, "FetchData finished")
         }
 
-        private fun wifiIpAddress(context: Context): String {
+        /*private fun wifiIpAddress(context: Context): String {
             val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
             var ipAddress = wifiManager.dhcpInfo.ipAddress
 
@@ -156,12 +197,11 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
 
             val ipByteArray = BigInteger.valueOf(ipAddress.toLong()).toByteArray()
 
-            var ipAddressString: String?
-            try {
-                ipAddressString = InetAddress.getByAddress(ipByteArray).hostAddress
+            val ipAddressString = try {
+                InetAddress.getByAddress(ipByteArray).hostAddress
             } catch (ex: UnknownHostException) {
                 Log.e(BroadcastDiscoveryActivity.BROADCAST_TAG, "Unable to get host address.")
-                ipAddressString = null
+                null
             }
 
             return ipAddressString?: ""
@@ -194,6 +234,6 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
 
             val intBroadcast = (0 until intIp.size).map {(intIp[it] or intNetMask[it].inv()) + 256}
             return intBroadcast.joinToString(".")
-        }
+        }*/
     }
 }
