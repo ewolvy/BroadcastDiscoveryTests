@@ -1,6 +1,5 @@
 package com.mooo.ewolvy.broadcastdiscovery
 
-import android.app.Activity
 import android.content.Context
 import android.os.AsyncTask
 import android.os.Bundle
@@ -50,6 +49,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
 
     private lateinit var serviceName: String
     private lateinit var arrayAdapter: ArrayAdapter<Server>
+    private lateinit var fetchData: FetchData
     private var port: Int = 0
     private var timeOut: Long = 0
 
@@ -62,7 +62,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         getValuesFromIntent()
 
         if (serviceName == ERROR_NO_SERVICE) {
-            //TODO ("Manage wrong calling to the library")
+            TODO ("Manage wrong calling to the library")
         }
 
         if (isWifiConnected()) {
@@ -70,11 +70,21 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
                 onServerSelected(parent, view, position, id)}
             arrayAdapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, serverList)
             list_view.adapter = arrayAdapter
-            val fetchData = FetchData(this)
-            fetchData.execute("BROADCAST_REALREMOTE", port.toString())
+            fetchData = FetchData(this)
+            fetchData.execute(serviceName, port.toString())
         } else {
             //TODO("Manage no Wifi connection")
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        if (!fetchData.isCancelled) fetchData.cancel(true)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        if (fetchData.isCancelled) fetchData.execute(serviceName, port.toString())
     }
 
     private fun getValuesFromIntent(){
@@ -120,40 +130,46 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         override fun doInBackground(vararg arguments: String?): FetchDataErrorStatus {
             val activity = activityReference.get()?: return FetchDataErrorStatus.INVALID_ACTIVITY
             val broadcastAddress = getBroadcastAddress(activity)
+            var timeStamp: Long = 0
 
-            val datagramSocket = DatagramSocket()
-            datagramSocket.broadcast = true
             val sendData = arguments[0]?.toByteArray() ?: return FetchDataErrorStatus.INVALID_SEND_DATA
             val port = arguments[1]?.toInt() ?: return FetchDataErrorStatus.INVALID_PORT
 
-            try {
-                val sendPacket = DatagramPacket(sendData, sendData.size, broadcastAddress, port)
-                datagramSocket.send(sendPacket)
-                Log.d(BROADCAST_TAG, "Request packet sent to: ${broadcastAddress.toString()}")
-            } catch (e: Exception) {
-                Log.d(BROADCAST_TAG, e.toString())
-            } finally {
-                datagramSocket.close()
+            while (activityReference.get() != null && !isCancelled) {
+                if (System.currentTimeMillis() - timeStamp > 5000) {
+                    val datagramSocket = DatagramSocket()
+                    datagramSocket.broadcast = true
+                    try {
+                        val sendPacket = DatagramPacket(sendData, sendData.size, broadcastAddress, port)
+                        datagramSocket.send(sendPacket)
+                        timeStamp = System.currentTimeMillis()
+                        Log.d(BROADCAST_TAG, "Request packet sent to: ${broadcastAddress.toString()}")
+                    } catch (e: Exception) {
+                        Log.d(BROADCAST_TAG, e.toString())
+                    } finally {
+                        datagramSocket.close()
+                    }
+                }
+                val serverSocket = ServerSocket(19103)
+                serverSocket.soTimeout = 1000
+                var clientSocket: Socket? = null
+                try {
+                    clientSocket = serverSocket.accept()
+                } catch (e: SocketTimeoutException) {
+                    Log.d(BROADCAST_TAG, "Timeout reached")
+                } finally {
+                    serverSocket.close()
+                }
+
+                Log.d(BROADCAST_TAG, "Received from: ${clientSocket?.inetAddress.toString()}")
+                if (clientSocket != null && !managedIps.any {it == clientSocket.inetAddress}) {
+                    managedIps.add(clientSocket.inetAddress)
+                    val br = BufferedReader(InputStreamReader(clientSocket.getInputStream()))
+                    val message = br.readLine()
+                    clientSocket.close()
+                    publishProgress(JSONObject(message))
+                }
             }
-
-            val serverSocket = ServerSocket(19103)
-            serverSocket.soTimeout = 5000
-            var clientSocket: Socket? = null
-            try{
-                clientSocket = serverSocket.accept()
-            } catch (e: SocketTimeoutException){
-                Log.d(BROADCAST_TAG, "Timeout reached")
-            } finally {
-                serverSocket.close()
-            }
-
-            Log.d(BROADCAST_TAG, "Received from: ${clientSocket?.inetAddress.toString()}")
-
-            val br = BufferedReader(InputStreamReader(clientSocket?.getInputStream() ?: return FetchDataErrorStatus.CLIENT_SOCKET_ERROR))
-            val message = br.readLine()
-            clientSocket.close()
-            publishProgress(JSONObject(message))
-
             return FetchDataErrorStatus.NO_ERROR
         }
 
@@ -179,10 +195,10 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             super.onPostExecute(result)
             when (result){
                 FetchDataErrorStatus.NO_ERROR -> Log.d(BROADCAST_TAG, "FetchData finished correctly")
-                FetchDataErrorStatus.INVALID_SEND_DATA -> TODO("Manage error")
-                FetchDataErrorStatus.INVALID_PORT -> TODO("Manage error")
-                FetchDataErrorStatus.CLIENT_SOCKET_ERROR -> TODO("Manage error")
-                FetchDataErrorStatus.INVALID_ACTIVITY -> TODO("Manage error")
+                FetchDataErrorStatus.INVALID_SEND_DATA -> TODO("Manage error invalid send data")
+                FetchDataErrorStatus.INVALID_PORT -> TODO("Manage error invalid port")
+                FetchDataErrorStatus.CLIENT_SOCKET_ERROR -> TODO("Manage error client socket error")
+                FetchDataErrorStatus.INVALID_ACTIVITY -> TODO("Manage error invalid activity")
             }
         }
 

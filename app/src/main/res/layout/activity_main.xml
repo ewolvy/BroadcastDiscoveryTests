@@ -16,15 +16,20 @@
             app:layout_constraintBottom_toBottomOf="parent" app:layout_constraintStart_toStartOf="parent"
             android:layout_marginStart="8dp" app:layout_constraintEnd_toEndOf="parent" android:layout_marginEnd="8dp"
             android:id="@+id/button_test"/>
+
     <EditText
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:inputType="text"
-            android:ems="10"
-            app:layout_constraintStart_toStartOf="parent"
-            app:layout_constraintEnd_toEndOf="parent" android:id="@+id/edit_service" android:layout_marginTop="8dp"
-            app:layout_constraintTop_toTopOf="parent" android:hint="Service"
-            android:contentDescription="Service name" android:text="REAL_REMOTE"/>
+        android:id="@+id/edit_service"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:contentDescription="Service name"
+        android:ems="10"
+        android:hint="Service"
+        android:inputType="text"
+        android:text="BROADCAST_REALREMOTE"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
     <EditText
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
