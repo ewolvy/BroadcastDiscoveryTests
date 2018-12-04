@@ -1,5 +1,6 @@
 package com.mooo.ewolvy.broadcastdiscovery
 
+import android.app.Activity
 import android.content.Context
 import android.os.AsyncTask
 import android.os.Bundle
@@ -111,32 +112,19 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         ).show()
     }
 
-    private class FetchData internal constructor(context: BroadcastDiscoveryActivity): AsyncTask<String, JSONObject, Unit>(){
+    private class FetchData internal constructor(context: BroadcastDiscoveryActivity): AsyncTask<String, JSONObject, FetchDataErrorStatus>(){
 
         private val activityReference: WeakReference<BroadcastDiscoveryActivity> = WeakReference(context)
+        private val managedIps = arrayListOf<InetAddress>()
 
-        override fun doInBackground(vararg arguments: String?) {
-            /*var i = 0
-            val activity = activityReference.get()?: return
-            while (!activity.isFinishing){
-                publishProgress(i.toString())
-                Log.d(BROADCAST_TAG, "doInBackground $i")
-                i++
-                Thread.sleep(activity.timeOut)
-            }*/
-            //TODO("not implemented") //To change body of created functions use File | Settings | File Templates.
-
-            val activity = activityReference.get()?: return
-            /*val ipAddress = wifiIpAddress(activity)
-            val networkMask = wifiIpNetMask(activity)*/
+        override fun doInBackground(vararg arguments: String?): FetchDataErrorStatus {
+            val activity = activityReference.get()?: return FetchDataErrorStatus.INVALID_ACTIVITY
             val broadcastAddress = getBroadcastAddress(activity)
 
             val datagramSocket = DatagramSocket()
             datagramSocket.broadcast = true
-            val sendData = arguments[0]?.toByteArray() ?: return
-            Log.d(BROADCAST_TAG, "Attempting to get port")
-            val port = arguments[1]?.toInt() ?: return
-            Log.d(BROADCAST_TAG, "Port fetched correctly")
+            val sendData = arguments[0]?.toByteArray() ?: return FetchDataErrorStatus.INVALID_SEND_DATA
+            val port = arguments[1]?.toInt() ?: return FetchDataErrorStatus.INVALID_PORT
 
             try {
                 val sendPacket = DatagramPacket(sendData, sendData.size, broadcastAddress, port)
@@ -155,12 +143,18 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
                 clientSocket = serverSocket.accept()
             } catch (e: SocketTimeoutException){
                 Log.d(BROADCAST_TAG, "Timeout reached")
+            } finally {
+                serverSocket.close()
             }
-            val br = BufferedReader(InputStreamReader(clientSocket?.getInputStream() ?: return))
+
+            Log.d(BROADCAST_TAG, "Received from: ${clientSocket?.inetAddress.toString()}")
+
+            val br = BufferedReader(InputStreamReader(clientSocket?.getInputStream() ?: return FetchDataErrorStatus.CLIENT_SOCKET_ERROR))
             val message = br.readLine()
             clientSocket.close()
-            serverSocket.close()
             publishProgress(JSONObject(message))
+
+            return FetchDataErrorStatus.NO_ERROR
         }
 
         private fun getBroadcastAddress(context: Context): InetAddress? {
@@ -181,9 +175,15 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             activity.addServer(values[0]?: return)
         }
 
-        override fun onPostExecute(result: Unit?) {
+        override fun onPostExecute(result: FetchDataErrorStatus) {
             super.onPostExecute(result)
-            Log.d(BROADCAST_TAG, "FetchData finished")
+            when (result){
+                FetchDataErrorStatus.NO_ERROR -> Log.d(BROADCAST_TAG, "FetchData finished correctly")
+                FetchDataErrorStatus.INVALID_SEND_DATA -> TODO("Manage error")
+                FetchDataErrorStatus.INVALID_PORT -> TODO("Manage error")
+                FetchDataErrorStatus.CLIENT_SOCKET_ERROR -> TODO("Manage error")
+                FetchDataErrorStatus.INVALID_ACTIVITY -> TODO("Manage error")
+            }
         }
 
         /*private fun wifiIpAddress(context: Context): String {
