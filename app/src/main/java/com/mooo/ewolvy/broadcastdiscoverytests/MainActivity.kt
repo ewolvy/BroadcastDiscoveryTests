@@ -1,11 +1,13 @@
 package com.mooo.ewolvy.broadcastdiscoverytests
 
+import android.app.Activity
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import android.content.Intent
 import android.support.design.widget.Snackbar
 import android.util.Log
 import com.mooo.ewolvy.broadcastdiscovery.BroadcastDiscoveryActivity
+import com.mooo.ewolvy.broadcastdiscovery.FetchDataErrorStatus
 import kotlinx.android.synthetic.main.activity_main.*
 import org.json.JSONObject
 
@@ -24,16 +26,24 @@ class MainActivity : AppCompatActivity() {
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         super.onActivityResult(requestCode, resultCode, data)
-        val response = data?.getStringExtra(BroadcastDiscoveryActivity.EXTRA_SERVER)
-        if (requestCode == REQUEST_CODE_BCD && resultCode == RESULT_OK && response != null) {
-            Snackbar.make(
-                root_layout, // Parent view
-                JSONObject(response).getJSONObject("META").getString("Description"), // Message to show
-                Snackbar.LENGTH_LONG // How long to display the message.
-            ).show()
-            Log.d(TEST_TAG, "Message shown")
-        } else {
-            Log.d(TEST_TAG, "Not shown: $response $resultCode ${data == null}")
+        when (requestCode){
+            REQUEST_CODE_BCD ->
+                if (resultCode == Activity.RESULT_OK) {
+                    val response = data?.getStringExtra(BroadcastDiscoveryActivity.EXTRA_SERVER)
+                    Snackbar.make(
+                        root_layout, // Parent view
+                        JSONObject(response).getJSONObject("META").getString("Description"), // Message to show
+                        Snackbar.LENGTH_LONG // How long to display the message.
+                    ).show()
+                } else if (resultCode == Activity.RESULT_CANCELED) {
+                    val error = data?.getSerializableExtra(BroadcastDiscoveryActivity.EXTRA_ERROR_CODE) as FetchDataErrorStatus? ?: FetchDataErrorStatus.UNKNOWN_ERROR
+                    Snackbar.make(
+                        root_layout,
+                        error.toString(),
+                        Snackbar.LENGTH_LONG
+                    ).show()
+                }
+            else -> Log.d(TEST_TAG, "Unexpected!!!")
         }
     }
 
@@ -43,6 +53,7 @@ class MainActivity : AppCompatActivity() {
         extras.putString(BroadcastDiscoveryActivity.EXTRA_SERVICE, edit_service.text.toString())
         extras.putInt(BroadcastDiscoveryActivity.EXTRA_PORT, edit_port.text.toString().toInt())
         extras.putLong(BroadcastDiscoveryActivity.EXTRA_TIMEOUT, edit_timeout.text.toString().toLong())
+        extras.putLong(BroadcastDiscoveryActivity.EXTRA_RESEND_TIME, edit_timeout.text.toString().toLong())
 
         intent.putExtra(BroadcastDiscoveryActivity.BROADCAST_EXTRAS, extras)
 
