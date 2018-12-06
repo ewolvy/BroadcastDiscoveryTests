@@ -6,4 +6,8 @@ data class Server (val description: String, val JSONResponse: JSONObject?){
     override fun toString(): String {
         return description
     }
+
+    fun responseAsString(): String {
+        return JSONResponse.toString()
+    }
 }

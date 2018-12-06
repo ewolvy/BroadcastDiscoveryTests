@@ -9,7 +9,6 @@ import kotlinx.android.synthetic.main.activity_broadcast_discovery.*
 import org.json.JSONObject
 import java.lang.ref.WeakReference
 import android.widget.ArrayAdapter
-import android.support.design.widget.Snackbar
 import android.util.Log
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
@@ -42,6 +41,7 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         const val BROADCAST_TAG = "BROADCAST_TAG"
         const val DEFAULT_TIMEOUT = 2000L
         const val ERROR_NO_SERVICE = "ERROR_NO_SERVICE"
+        const val EXTRA_SERVER = "broadcast.server"
         const val EXTRA_SERVICE = "broadcast.service"
         const val EXTRA_PORT = "broadcast.port"
         const val EXTRA_TIMEOUT = "broadcast.timeout"
@@ -108,18 +108,11 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
         arrayAdapter.notifyDataSetChanged()
     }
 
-    /*private fun addServer(server: String){
-        serverList.add(Server (server, null))
-        arrayAdapter.notifyDataSetChanged()
-    }*/
-
     private fun onServerSelected(parent: View, view: View, position: Int, id: Long){
-        //TODO("manage server selection and return to calling Activity")
-        Snackbar.make(
-            parent, // Parent view
-            "Prueba $position", // Message to show
-            Snackbar.LENGTH_LONG // How long to display the message.
-        ).show()
+        intent.putExtra(EXTRA_SERVER, serverList[position].responseAsString())
+        setResult(RESULT_OK, intent)
+        Log.d(BROADCAST_TAG, "${serverList[position]} $RESULT_OK")
+        finish()
     }
 
     private class FetchData internal constructor(context: BroadcastDiscoveryActivity): AsyncTask<String, JSONObject, FetchDataErrorStatus>(){
@@ -201,55 +194,5 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
                 FetchDataErrorStatus.INVALID_ACTIVITY -> TODO("Manage error invalid activity")
             }
         }
-
-        /*private fun wifiIpAddress(context: Context): String {
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            var ipAddress = wifiManager.dhcpInfo.ipAddress
-
-            // Convert little-endian to big-endian if needed
-            if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
-                ipAddress = Integer.reverseBytes(ipAddress)
-            }
-
-            val ipByteArray = BigInteger.valueOf(ipAddress.toLong()).toByteArray()
-
-            val ipAddressString = try {
-                InetAddress.getByAddress(ipByteArray).hostAddress
-            } catch (ex: UnknownHostException) {
-                Log.e(BroadcastDiscoveryActivity.BROADCAST_TAG, "Unable to get host address.")
-                null
-            }
-
-            return ipAddressString?: ""
-        }
-
-        private fun wifiIpNetMask(context: Context): String {
-            val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-            var netmask = wifiManager.dhcpInfo.netmask
-
-            // Convert little-endian to big-endian if needed
-            if (ByteOrder.nativeOrder() == ByteOrder.LITTLE_ENDIAN) {
-                netmask = Integer.reverseBytes(netmask)
-            }
-            val longMask = netmask + 4294967296
-
-            val byteA = longMask / 256 / 256 / 256
-            val byteB = (longMask - byteA * 256 * 256 * 256) / 256 / 256
-            val byteC = (longMask - byteA * 256 * 256 * 256 - byteB * 256 * 256) / 256
-            val byteD = longMask - byteA * 256 * 256 * 256 - byteB * 256 * 256 - byteC * 256
-
-            return byteA.toString() + "." +
-                    byteB.toString() + "." +
-                    byteC.toString() + "." +
-                    byteD.toString()
-        }
-
-        private fun wifiIpBroadcast(ipAddress: String, netMask: String): String {
-            val intIp = ipAddress.split(".").map { it.toInt() }
-            val intNetMask = netMask.split(".").map { it.toInt() }
-
-            val intBroadcast = (0 until intIp.size).map {(intIp[it] or intNetMask[it].inv()) + 256}
-            return intBroadcast.joinToString(".")
-        }*/
     }
 }
