@@ -118,7 +118,13 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
     }
 
     private fun addServer(server: JSONObject){
-        serverList.add(Server (server.getJSONObject("META").getString("Description"), server))
+        val meta = server.getJSONObject("META")
+        val objects = meta.getJSONArray("ObjectNames")
+        for (index in 0..(objects.length() - 1)){
+            val serverToAdd = server.getJSONObject(objects.getString(index))
+            serverList.add(Server (serverToAdd.getString("Description"), serverToAdd))
+        }
+        //serverList.add(Server (server.getJSONObject("META").getString("Description"), server))
         arrayAdapter.notifyDataSetChanged()
     }
 

@@ -32,7 +32,7 @@ class MainActivity : AppCompatActivity() {
                     val response = data?.getStringExtra(BroadcastDiscoveryActivity.EXTRA_SERVER)
                     Snackbar.make(
                         root_layout, // Parent view
-                        JSONObject(response).getJSONObject("META").getString("Description"), // Message to show
+                        JSONObject(response).getString("Description"), // Message to show
                         Snackbar.LENGTH_LONG // How long to display the message.
                     ).show()
                 } else if (resultCode == Activity.RESULT_CANCELED) {
