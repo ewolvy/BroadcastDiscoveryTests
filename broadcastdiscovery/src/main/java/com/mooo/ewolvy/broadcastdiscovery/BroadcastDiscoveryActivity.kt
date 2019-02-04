@@ -124,7 +124,6 @@ class BroadcastDiscoveryActivity : AppCompatActivity() {
             val serverToAdd = server.getJSONObject(objects.getString(index))
             serverList.add(Server (serverToAdd.getString("Description"), serverToAdd))
         }
-        //serverList.add(Server (server.getJSONObject("META").getString("Description"), server))
         arrayAdapter.notifyDataSetChanged()
     }
 
